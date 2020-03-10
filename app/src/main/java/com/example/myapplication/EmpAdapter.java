@@ -11,8 +11,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 
 public class EmpAdapter extends RecyclerView.Adapter<EmpAdapter.EmpViewHolder> {
-    ArrayList<Employe> employees;
-    public EmpAdapter(ArrayList<Employe> employees){
+    ArrayList<Employee> employees;
+    public EmpAdapter(ArrayList<Employee> employees){
         this.employees = employees;
     }
 

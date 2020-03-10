@@ -23,41 +23,49 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class MainActivity extends AppCompatActivity {
-    String sURL = "http://www.mocky.io/v2/5ddcd3673400005800eae483";
-    empParsing m = new empParsing();
+    public static String sURL = "http://www.mocky.io/v2/5ddcd3673400005800eae483";
+    public static String data;
     RecyclerView recyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        m.execute(sURL);
+        downloadData connect = new downloadData();
+        Thread downloadThread = new Thread(connect);
+        downloadThread.start();
+        try {
+            downloadThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        TreeMap<String, String> map = new TreeMap<>();
-        TreeMap<String, String> map1 = new TreeMap<>();
+        TreeMap<String, String> mapWithPhone = new TreeMap<>();
+        TreeMap<String, String> mapWithSkills = new TreeMap<>();
         try {
             JSONParser jsonParser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) jsonParser.parse(m.get());
+            JSONObject jsonObject = (JSONObject) jsonParser.parse(data);
             JSONObject company = (JSONObject) jsonObject.get("company");
             JSONArray emp = (JSONArray) company.get("employees");
-            JSONObject end = new JSONObject();
+            JSONObject end;
             JSONArray skills;
             for (int i = 0; i < emp.size(); i++) {
                 end = (JSONObject) emp.get(i);
                 skills = (JSONArray) end.get("skills");
                 String skill ="";
                 String name = (String) end.get("name");
-                if (name == null) name = "имя отсутствует" + i;
+                if (name == null) name = "имя отсутствует" + " #" + i;
                 String phone_number = (String) end.get("phone_number");
                 if (phone_number == null) phone_number = "телефон отсутствует";
-                map.put(name, phone_number);
+                mapWithPhone.put(name, phone_number);
                 for (int c = 0; c < skills.size(); c++) {
-                    skill = skill+" "+skills.get(c);
-                    map1.put(name, skill);
+                    if(skill.equals("")){skill = ""+skills.get(c);}
+                    else skill = skill+", "+skills.get(c);
+                    mapWithSkills.put(name, skill);
                 }
             }
         }
@@ -71,16 +79,15 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        ArrayList<Employe> employes = new ArrayList<>();
-        Iterator<Map.Entry<String, String>> iterator = map.entrySet().iterator();
+        ArrayList<Employee> employes = new ArrayList<>();
+        Iterator<Map.Entry<String, String>> iterator = mapWithPhone.entrySet().iterator();
         while (iterator.hasNext()) {
-            //получение  элементов
             Map.Entry<String, String> pair = iterator.next();
             String key = pair.getKey();
             String value = pair.getValue();
-            String sk = map1.get(pair.getKey());
+            String sk = mapWithSkills.get(pair.getKey());
             if(sk ==null) sk="ничего не умеет";
-            employes.add(new Employe(key,"Телефон: "+value,"Навыки: "+ sk));
+            employes.add(new Employee(key,"Телефон: "+value,"Навыки: "+ sk));
         }
         EmpAdapter empAdapter = new EmpAdapter(employes);
         recyclerView.setAdapter(empAdapter);
@@ -100,20 +107,19 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-    class empParsing extends AsyncTask<String, Void, String> {
-        String j="";
-        protected String doInBackground(String... strings) {
+
+    public static class downloadData implements Runnable{
+        public void run(){
             BufferedReader reader = null;
             try {
                 URL url = new URL(sURL);
                 reader = new BufferedReader(new InputStreamReader(url.openStream()));
-                StringBuffer buffer = new StringBuffer();
+                StringBuilder buffer = new StringBuilder();
                 int read;
                 char[] chars = new char[1024];
                 while ((read = reader.read(chars)) != -1)
                     buffer.append(chars, 0, read);
-                j = buffer.toString();
-
+                data = buffer.toString();
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -122,12 +128,12 @@ public class MainActivity extends AppCompatActivity {
                 if (reader != null) {
                     try {
                         reader.close();
+
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
             }
-            return j;
         }
     }
 }
